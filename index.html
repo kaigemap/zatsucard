@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>カード画像ジェネレーター</title>
+  <style>
+    body { 
+      font-family: "Hiragino Sans", "Meiryo", sans-serif; 
+      padding: 2em; 
+      max-width: 1400px;
+      margin: 0 auto;
+      background-color: #f5f5f5;
+    }
+    h1, h2 { color: #333; }
+    .container {
+      background-color: white;
+      padding: 2em;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .controls {
+      margin-bottom: 2em;
+      padding: 1em;
+      background-color: #f0f8ff;
+      border-radius: 8px;
+    }
+    .control-group {
+      margin-bottom: 1em;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5em;
+      font-weight: bold;
+    }
+    .inline-label {
+      display: inline-block;
+      margin-right: 1em;
+    }
+    canvas { 
+      border: 1px solid #ccc; 
+      display: block; 
+      margin: 1em 0; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    #cardList { 
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5em; 
+      margin-top: 2em;
+    }
+    .cardWrapper { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center;
+      background-color: white;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .card-preview {
+      width: 100%;
+      height: auto;
+      max-width: 240px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0.5em;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .button-group {
+      display: flex;
+      justify-content: center;
+      margin-top: 1em;
+    }
+    .download-all {
+      background-color: #2196F3;
+      margin-top: 1em;
+    }
+    input[type="color"] {
+      width: 50px;
+      height: 30px;
+      cursor: pointer;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+    .info {
+      background-color: #e7f3fe;
+      border-left: 6px solid #2196F3;
+      padding: 0.5em 1em;
+      margin-bottom: 1em;
+    }
+    .csv-preview {
+      margin-top: 1em;
+      padding: 1em;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 1em;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      background-color: #f0f0f0;
+    }
+    .tab.active {
+      background-color: white;
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+      padding: 1em;
+      border: 1px solid #ccc;
+      border-radius: 0 5px 5px 5px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>カード画像ジェネレーター</h1>
+      <div>
+        <button id="resetBtn">リセット</button>
+      </div>
+    </div>
+    
+    <div class="info">
+      <p>CSVファイルをアップロードしてカード画像を生成します。標準フォーマット（title, text列）または材料リスト形式（料理名, 材料①, 材料②...）に対応しています。</p>
+      <p>カードサイズ: 480x720px (ccfoliaのグリッド4x6に最適化)</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="standard">標準CSV</div>
+      <div class="tab" data-tab="ingredients">材料リスト形式CSV</div>
+    </div>
+
+    <div class="controls">
+      <div class="tab-content active" id="standard-tab">
+        <h2>標準CSVフォーマット</h2>
+        <p>「title」と「text」の2列を含むCSVファイルをアップロードしてください。</p>
+        <div class="control-group">
+          <label for="csvInput">CSVファイルを選択:</label>
+          <input type="file" id="csvInput" accept=".csv">
+        </div>
+      </div>
+      
+      <div class="tab-content" id="ingredients-tab">
+        <h2>材料リスト形式CSVフォーマット</h2>
+        <p>「料理名」と「材料①」〜「材料⑥」などの複数列を含むCSVファイルをアップロードしてください。</p>
+        <div class="control-group">
+          <label for="ingredientsCsvInput">CSVファイルを選択:</label>
+          <input type="file" id="ingredientsCsvInput" accept=".csv">
+        </div>
+        
+        <div class="control-group">
+          <label>列の設定:</label>
+          <div>
+            <label class="inline-label">料理名の列: <input type="text" id="dishNameColumn" value="料理" size="10"></label>
+            <label class="inline-label">材料の開始列: <input type="text" id="ingredientStartColumn" value="材料①" size="10"></label>
+            <button id="detectColumns">CSVから自動検出</button>
+          </div>
+        </div>
+
+        <div id="csvPreview" class="csv-preview">
+          <p>CSVプレビューがここに表示されます</p>
+        </div>
+      </div>
+      
+      <h2>カードデザイン</h2>
+      <div class="control-group">
+        <label>カードデザイン:</label>
+        <div>
+          <label class="inline-label">背景色: <input type="color" id="bgColor" value="#ffffff"></label>
+          <label class="inline-label">枠線色: <input type="color" id="borderColor" value="#000000"></label>
+          <label class="inline-label">タイトル色: <input type="color" id="titleColor" value="#000000"></label>
+          <label class="inline-label">テキスト色: <input type="color" id="textColor" value="#000000"></label>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label>フォント設定:</label>
+        <div>
+          <label>タイトルサイズ: <input type="range" id="titleSize" min="16" max="64" value="54"> <span id="titleSizeValue">54px</span></label>
+          <label>テキストサイズ: <input type="range" id="textSize" min="12" max="54" value="40"> <span id="textSizeValue">40px</span></label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="button-group">
+      <button id="downloadAllBtn" class="download-all" disabled>すべてダウンロード (ZIP)</button>
+    </div>
+    
+    <h2>カードプレビュー</h2>
+    <div id="cardList"></div>
+  </div>
+  <div class="info">
+    <p>このミニアプリはChatGPT, Claude, Copilot, そして手作業で作られています。</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script>
+    // 要素の参照を取得
+    const csvInput = document.getElementById('csvInput');
+    const ingredientsCsvInput = document.getElementById('ingredientsCsvInput');
+    const cardList = document.getElementById('cardList');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const bgColor = document.getElementById('bgColor');
+    const borderColor = document.getElementById('borderColor');
+    const titleColor = document.getElementById('titleColor');
+    const textColor = document.getElementById('textColor');
+    const titleSize = document.getElementById('titleSize');
+    const textSize = document.getElementById('textSize');
+    const titleSizeValue = document.getElementById('titleSizeValue');
+    const textSizeValue = document.getElementById('textSizeValue');
+    const dishNameColumn = document.getElementById('dishNameColumn');
+    const ingredientStartColumn = document.getElementById('ingredientStartColumn');
+    const detectColumns = document.getElementById('detectColumns');
+    const csvPreview = document.getElementById('csvPreview');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    // カード生成用データ
+    let cardData = [];
+    let rawCsvData = [];
+    
+    // カードの実際のサイズ定義
+    const CARD_WIDTH = 480;
+    const CARD_HEIGHT = 720;
+    
+    // タブ切り替え
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // タブのアクティブ状態を切り替え
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // タブコンテンツの表示を切り替え
+        const tabId = tab.getAttribute('data-tab');
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+          if (content.id === tabId + '-tab') {
+            content.classList.add('active');
+          }
+        });
+      });
+    });
+    
+    // イベントリスナーの設定
+    csvInput.addEventListener('change', handleStandardFileUpload);
+    ingredientsCsvInput.addEventListener('change', handleIngredientsFileUpload);
+    downloadAllBtn.addEventListener('click', downloadAllCards);
+    resetBtn.addEventListener('click', resetApp);
+    detectColumns.addEventListener('click', detectColumnNames);
+    
+    // デザイン設定の変更時に再レンダリング
+    [bgColor, borderColor, titleColor, textColor, titleSize, textSize].forEach(elem => {
+      elem.addEventListener('input', () => {
+        if (elem === titleSize) titleSizeValue.textContent = `${elem.value}px`;
+        if (elem === textSize) textSizeValue.textContent = `${elem.value}px`;
+        if (cardData.length > 0) generateCards(cardData);
+      });
+    });
+    
+    // 標準CSVファイルの処理
+    function handleStandardFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.data && results.data.length > 0) {
+            // CSVデータを検証
+            if (!results.meta.fields.includes('title') || !results.meta.fields.includes('text')) {
+              alert('CSVファイルには「title」と「text」の列が必要です。');
+              return;
+            }
+            
+            cardData = results.data;
+            generateCards(cardData);
+            downloadAllBtn.disabled = false;
+          } else {
+            alert('CSVファイルにデータが見つかりませんでした。');
+          }
+        },
+        error: (error) => {
+          alert('CSVファイルの解析中にエラーが発生しました: ' + error);
+        }
+      });
+    }
+    
+    // 材料リスト形式CSVファイルの処理
+    function handleIngredientsFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.data && results.data.length > 0) {
+            rawCsvData = results.data;
+            
+            // CSVプレビューを表示
+            displayCsvPreview(results.data, results.meta.fields);
+            
+            // 列名を自動検出
+            detectColumnNames();
+            
+            // カードデータに変換
+            convertIngredientsToCardData();
+          } else {
+            alert('CSVファイルにデータが見つかりませんでした。');
+          }
+        },
+        error: (error) => {
+          alert('CSVファイルの解析中にエラーが発生しました: ' + error);
+        }
+      });
+    }
+    
+    // 列名を自動検出
+    function detectColumnNames() {
+      if (rawCsvData.length === 0) return;
+      
+      const fields = Object.keys(rawCsvData[0]);
+      
+      // 料理名の列を検出
+      const dishNameCandidates = fields.filter(field => 
+        field.includes('料理') || field.includes('メニュー') || field.includes('dish') || 
+        field.includes('name') || field.includes('名前') || field.includes('名称')
+      );
+      
+      if (dishNameCandidates.length > 0) {
+        dishNameColumn.value = dishNameCandidates[0];
+      }
+      
+      // 材料の開始列を検出
+      const ingredientCandidates = fields.filter(field => 
+        field.includes('材料') || field.includes('ingredient')
+      );
+      
+      if (ingredientCandidates.length > 0) {
+        ingredientStartColumn.value = ingredientCandidates[0];
+      }
+      
+      if (!dishNameColumn.value || !ingredientStartColumn.value) {
+        alert('料理名の列または材料の開始列が検出されませんでした。手動で設定してください。');
+        return;
+      }
+      
+      // 変換を実行
+      convertIngredientsToCardData();
+    }
+    
+    // CSVプレビューを表示
+    function displayCsvPreview(data, fields) {
+      if (data.length === 0) return;
+      
+      // 最大5行まで表示
+      const previewData = data.slice(0, 5);
+      
+      let tableHtml = '<table><thead><tr>';
+      fields.forEach(field => {
+        tableHtml += `<th>${field}</th>`;
+      });
+      tableHtml += '</tr></thead><tbody>';
+      
+      previewData.forEach(row => {
+        tableHtml += '<tr>';
+        fields.forEach(field => {
+          tableHtml += `<td>${row[field] || ''}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      
+      tableHtml += '</tbody></table>';
+      csvPreview.innerHTML = tableHtml;
+    }
+    
+    // 材料リスト形式のデータをカードデータに変換
+    function convertIngredientsToCardData() {
+      if (rawCsvData.length === 0) return;
+      
+      const dishNameCol = dishNameColumn.value;
+      const ingredientStartCol = ingredientStartColumn.value;
+      
+      if (!dishNameCol || !ingredientStartCol) {
+        alert('料理名の列と材料の開始列を指定してください。');
+        return;
+      }
+      
+      // 列名の取得
+      const fields = Object.keys(rawCsvData[0]);
+      const ingredientIndex = fields.indexOf(ingredientStartCol);
+      
+      if (ingredientIndex === -1) {
+        alert(`「${ingredientStartCol}」という列名が見つかりません。`);
+        return;
+      }
+      
+      // 材料の列を特定
+      const ingredientColumns = fields.slice(ingredientIndex);
+      
+      // カードデータに変換
+      cardData = rawCsvData.map(row => {
+        const title = row[dishNameCol] || '';
+        
+        // 材料をテキストに変換
+        let ingredientTexts = [];
+        ingredientColumns.forEach(col => {
+          let ingredient = row[col];
+          if (ingredient) {
+            ingredientTexts.push(ingredient);
+          }
+        });
+        
+        return {
+          title: title,
+          text: ingredientTexts.join('\n')
+        };
+      });
+      
+      // カード生成
+      generateCards(cardData);
+      downloadAllBtn.disabled = false;
+    }
+    
+    // カードの生成
+    function generateCards(data) {
+      cardList.innerHTML = '';
+      
+      data.forEach((card, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'cardWrapper';
+        
+        // カードを描画するCanvas（フルサイズ）
+        const canvas = document.createElement('canvas');
+        canvas.width = CARD_WIDTH;
+        canvas.height = CARD_HEIGHT;
+        canvas.style.display = 'none'; // フルサイズCanvasは非表示
+        const ctx = canvas.getContext('2d');
+        
+        // カードの描画
+        drawCard(ctx, canvas, card);
+        
+        // プレビュー用の小さいCanvas
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.className = 'card-preview';
+        previewCanvas.width = 240;
+        previewCanvas.height = Math.floor(CARD_HEIGHT * (240 / CARD_WIDTH));
+        const previewCtx = previewCanvas.getContext('2d');
+        
+        // フルサイズのカードをプレビューサイズにリサイズ
+        previewCtx.drawImage(canvas, 0, 0, CARD_WIDTH, CARD_HEIGHT, 0, 0, previewCanvas.width, previewCanvas.height);
+        
+        // ダウンロードボタン
+        const dlBtn = document.createElement('button');
+        dlBtn.textContent = 'ダウンロード';
+        dlBtn.onclick = () => downloadCard(canvas, `card_${i + 1}`);
+        
+        wrapper.appendChild(previewCanvas);
+        wrapper.appendChild(dlBtn);
+        cardList.appendChild(wrapper);
+      });
+    }
+    
+    // カードの描画
+    function drawCard(ctx, canvas, card) {
+      // 背景
+      ctx.fillStyle = bgColor.value;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 枠線
+      ctx.strokeStyle = borderColor.value;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+      
+      // タイトル
+      ctx.fillStyle = titleColor.value;
+      ctx.font = `bold ${titleSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(card.title || '', canvas.width / 2, 80);
+      
+      // 説明文
+      ctx.fillStyle = textColor.value;
+      ctx.font = `${textSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
+      ctx.textAlign = 'left';
+      wrapTextJapanese(ctx, card.text || '', 30, 150, canvas.width - 60, parseInt(textSize.value) * 1.5);
+    }
+    
+    // 日本語テキストの折り返し処理
+    function wrapTextJapanese(ctx, text, x, y, maxWidth, lineHeight) {
+      // 句読点で改行しないようにする
+      const lines = [];
+      let currentLine = '';
+      
+      // まず改行コードで分割
+      const paragraphs = text.split(/\n/);
+      
+      for (const paragraph of paragraphs) {
+        if (paragraph === '') {
+          lines.push('');
+          continue;
+        }
+        
+        // イタリック（斜体）のチェック
+        if (paragraph.startsWith('*') && paragraph.endsWith('*')) {
+          ctx.save();
+          ctx.font = `italic ${textSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
+          lines.push(paragraph);
+          ctx.restore();
+          continue;
+        }
+        
+        let currentX = x;
+        for (let i = 0; i < paragraph.length; i++) {
+          const char = paragraph[i];
+          const charWidth = ctx.measureText(char).width;
+          
+          // 行の最大幅を超える場合は改行
+          if (currentX + charWidth > x + maxWidth) {
+            lines.push(currentLine);
+            currentLine = char;
+            currentX = x + charWidth;
+          } else {
+            currentLine += char;
+            currentX += charWidth;
+          }
+        }
+        
+        // 最後の行を追加
+        if (currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+      }
+      
+      // テキストを描画
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // イタリック（斜体）のチェック
+        if (line.startsWith('*') && line.endsWith('*')) {
+          ctx.save();
+          ctx.font = `italic ${textSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
+          ctx.fillText(line.substring(1, line.length - 1), x, y + (i * lineHeight));
+          ctx.restore();
+        } else {
+          ctx.fillText(line, x, y + (i * lineHeight));
+        }
+      }
+    }
+    
+    // 個別カードのダウンロード
+    function downloadCard(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = `${filename}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    
+    // すべてのカードをZIPでダウンロード
+    function downloadAllCards() {
+      if (cardList.children.length === 0) return;
+      
+      const zip = new JSZip();
+      const promises = [];
+      
+      // カードリストからカードラッパーを取得
+      const cardWrappers = Array.from(cardList.children);
+      
+      // 各カードをZIPに追加
+      cardWrappers.forEach((wrapper, i) => {
+        // フルサイズのカードを生成
+        const canvas = document.createElement('canvas');
+        canvas.width = CARD_WIDTH;
+        canvas.height = CARD_HEIGHT;
+        const ctx = canvas.getContext('2d');
+        
+        // カードを描画
+        drawCard(ctx, canvas, cardData[i]);
+        
+        const promise = new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            zip.file(`card_${i + 1}.png`, blob);
+            resolve();
+          });
+        });
+        promises.push(promise);
+      });
+      
+      // すべての処理が完了したらZIPをダウンロード
+      Promise.all(promises).then(() => {
+        zip.generateAsync({ type: 'blob' }).then((content) => {
+          saveAs(content, 'cards.zip');
+        });
+      });
+    }
+    
+    // アプリケーションのリセット
+    function resetApp() {
+      csvInput.value = '';
+      ingredientsCsvInput.value = '';
+      cardData = [];
+      rawCsvData = [];
+      cardList.innerHTML = '';
+      csvPreview.innerHTML = '<p>CSVプレビューがここに表示されます</p>';
+      downloadAllBtn.disabled = true;
+      
+      // デザイン設定をデフォルトに戻す
+      bgColor.value = '#ffffff';
+      borderColor.value = '#000000';
+      titleColor.value = '#000000';
+      textColor.value = '#000000';
+      titleSize.value = 24;
+      textSize.value = 16;
+      titleSizeValue.textContent = '24px';
+      textSizeValue.textContent = '16px';
+    }
+  </script>
+</body>
+</html>
