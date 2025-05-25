@@ -142,13 +142,13 @@
     </div>
     
     <div class="info">
-      <p>CSVファイルをアップロードしてカード画像を生成します。1列目がタイトル、2列目以降がすべて本文として結合されます。</p>
       <p>カードサイズ: 480x720px (ccfoliaのグリッド4x6に最適化)</p>
     </div>
 
     <div class="controls">
       <h2>CSVファイルアップロード</h2>
       <p>1列目がタイトル、2列目以降が本文として使用される任意のCSVファイルをアップロードしてください。</p>
+      <p><strong>重要:</strong> CSVファイルの1行目はヘッダー行として認識され、カードデータには含まれません。実際のカードは2行目以降のデータから生成されます。</p>
       <div class="control-group">
         <label for="csvInput">CSVファイルを選択:</label>
         <input type="file" id="csvInput" accept=".csv">
