@@ -129,31 +129,7 @@
     th {
       background-color: #f2f2f2;
     }
-    .tabs {
-      display: flex;
-      margin-bottom: 1em;
-    }
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border: 1px solid #ccc;
-      border-bottom: none;
-      border-radius: 5px 5px 0 0;
-      background-color: #f0f0f0;
-    }
-    .tab.active {
-      background-color: white;
-      font-weight: bold;
-    }
-    .tab-content {
-      display: none;
-      padding: 1em;
-      border: 1px solid #ccc;
-      border-radius: 0 5px 5px 5px;
-    }
-    .tab-content.active {
-      display: block;
-    }
+
   </style>
 </head>
 <body>
@@ -166,45 +142,20 @@
     </div>
     
     <div class="info">
-      <p>CSVファイルをアップロードしてカード画像を生成します。標準フォーマット（title, text列）または材料リスト形式（料理名, 材料①, 材料②...）に対応しています。</p>
+      <p>CSVファイルをアップロードしてカード画像を生成します。1列目がタイトル、2列目以降がすべて本文として結合されます。</p>
       <p>カードサイズ: 480x720px (ccfoliaのグリッド4x6に最適化)</p>
     </div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="standard">標準CSV</div>
-      <div class="tab" data-tab="ingredients">材料リスト形式CSV</div>
-    </div>
-
     <div class="controls">
-      <div class="tab-content active" id="standard-tab">
-        <h2>標準CSVフォーマット</h2>
-        <p>「title」と「text」の2列を含むCSVファイルをアップロードしてください。</p>
-        <div class="control-group">
-          <label for="csvInput">CSVファイルを選択:</label>
-          <input type="file" id="csvInput" accept=".csv">
-        </div>
+      <h2>CSVファイルアップロード</h2>
+      <p>1列目がタイトル、2列目以降が本文として使用される任意のCSVファイルをアップロードしてください。</p>
+      <div class="control-group">
+        <label for="csvInput">CSVファイルを選択:</label>
+        <input type="file" id="csvInput" accept=".csv">
       </div>
-      
-      <div class="tab-content" id="ingredients-tab">
-        <h2>材料リスト形式CSVフォーマット</h2>
-        <p>「料理名」と「材料①」〜「材料⑥」などの複数列を含むCSVファイルをアップロードしてください。</p>
-        <div class="control-group">
-          <label for="ingredientsCsvInput">CSVファイルを選択:</label>
-          <input type="file" id="ingredientsCsvInput" accept=".csv">
-        </div>
-        
-        <div class="control-group">
-          <label>列の設定:</label>
-          <div>
-            <label class="inline-label">料理名の列: <input type="text" id="dishNameColumn" value="料理" size="10"></label>
-            <label class="inline-label">材料の開始列: <input type="text" id="ingredientStartColumn" value="材料①" size="10"></label>
-            <button id="detectColumns">CSVから自動検出</button>
-          </div>
-        </div>
 
-        <div id="csvPreview" class="csv-preview">
-          <p>CSVプレビューがここに表示されます</p>
-        </div>
+      <div id="csvPreview" class="csv-preview">
+        <p>CSVプレビューがここに表示されます</p>
       </div>
       
       <h2>カードデザイン</h2>
@@ -244,7 +195,6 @@
   <script>
     // 要素の参照を取得
     const csvInput = document.getElementById('csvInput');
-    const ingredientsCsvInput = document.getElementById('ingredientsCsvInput');
     const cardList = document.getElementById('cardList');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -256,12 +206,7 @@
     const textSize = document.getElementById('textSize');
     const titleSizeValue = document.getElementById('titleSizeValue');
     const textSizeValue = document.getElementById('textSizeValue');
-    const dishNameColumn = document.getElementById('dishNameColumn');
-    const ingredientStartColumn = document.getElementById('ingredientStartColumn');
-    const detectColumns = document.getElementById('detectColumns');
     const csvPreview = document.getElementById('csvPreview');
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
     
     // カード生成用データ
     let cardData = [];
@@ -271,30 +216,10 @@
     const CARD_WIDTH = 480;
     const CARD_HEIGHT = 720;
     
-    // タブ切り替え
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        // タブのアクティブ状態を切り替え
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        
-        // タブコンテンツの表示を切り替え
-        const tabId = tab.getAttribute('data-tab');
-        tabContents.forEach(content => {
-          content.classList.remove('active');
-          if (content.id === tabId + '-tab') {
-            content.classList.add('active');
-          }
-        });
-      });
-    });
-    
     // イベントリスナーの設定
-    csvInput.addEventListener('change', handleStandardFileUpload);
-    ingredientsCsvInput.addEventListener('change', handleIngredientsFileUpload);
+    csvInput.addEventListener('change', handleFileUpload);
     downloadAllBtn.addEventListener('click', downloadAllCards);
     resetBtn.addEventListener('click', resetApp);
-    detectColumns.addEventListener('click', detectColumnNames);
     
     // デザイン設定の変更時に再レンダリング
     [bgColor, borderColor, titleColor, textColor, titleSize, textSize].forEach(elem => {
@@ -305,55 +230,27 @@
       });
     });
     
-    // 標準CSVファイルの処理
-    function handleStandardFileUpload(e) {
+    // CSVファイルの処理
+    function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
       
       Papa.parse(file, {
-        header: true,
+        header: false, // 配列形式で取得
         skipEmptyLines: true,
         complete: (results) => {
-          if (results.data && results.data.length > 0) {
-            // CSVデータを検証
-            if (!results.meta.fields.includes('title') || !results.meta.fields.includes('text')) {
-              alert('CSVファイルには「title」と「text」の列が必要です。');
-              return;
-            }
-            
-            cardData = results.data;
-            generateCards(cardData);
-            downloadAllBtn.disabled = false;
-          } else {
-            alert('CSVファイルにデータが見つかりませんでした。');
-          }
-        },
-        error: (error) => {
-          alert('CSVファイルの解析中にエラーが発生しました: ' + error);
-        }
-      });
-    }
-    
-    // 材料リスト形式CSVファイルの処理
-    function handleIngredientsFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
+          console.log('PapaParseの結果:', results);
+          console.log('メタ情報:', results.meta);
+          console.log('全行のデータ:', results.data);
+          
           if (results.data && results.data.length > 0) {
             rawCsvData = results.data;
             
             // CSVプレビューを表示
-            displayCsvPreview(results.data, results.meta.fields);
-            
-            // 列名を自動検出
-            detectColumnNames();
+            displayCsvPreview(results.data);
             
             // カードデータに変換
-            convertIngredientsToCardData();
+            convertToCardData();
           } else {
             alert('CSVファイルにデータが見つかりませんでした。');
           }
@@ -364,106 +261,122 @@
       });
     }
     
-    // 列名を自動検出
-    function detectColumnNames() {
-      if (rawCsvData.length === 0) return;
-      
-      const fields = Object.keys(rawCsvData[0]);
-      
-      // 料理名の列を検出
-      const dishNameCandidates = fields.filter(field => 
-        field.includes('料理') || field.includes('メニュー') || field.includes('dish') || 
-        field.includes('name') || field.includes('名前') || field.includes('名称')
-      );
-      
-      if (dishNameCandidates.length > 0) {
-        dishNameColumn.value = dishNameCandidates[0];
-      }
-      
-      // 材料の開始列を検出
-      const ingredientCandidates = fields.filter(field => 
-        field.includes('材料') || field.includes('ingredient')
-      );
-      
-      if (ingredientCandidates.length > 0) {
-        ingredientStartColumn.value = ingredientCandidates[0];
-      }
-      
-      if (!dishNameColumn.value || !ingredientStartColumn.value) {
-        alert('料理名の列または材料の開始列が検出されませんでした。手動で設定してください。');
-        return;
-      }
-      
-      // 変換を実行
-      convertIngredientsToCardData();
-    }
-    
     // CSVプレビューを表示
-    function displayCsvPreview(data, fields) {
+    function displayCsvPreview(data) {
       if (data.length === 0) return;
       
+      // 最初の行をヘッダーとして扱う
+      const headers = data[0] || [];
+      const dataRows = data.slice(1);
+      
+      // 列の情報を表示
+      let infoHtml = `<div style="margin-bottom: 10px; padding: 5px; background-color: #e8f4fd; border-radius: 3px;">`;
+      infoHtml += `<strong>検出された列:</strong> ${headers.length}列<br>`;
+      infoHtml += `<strong>タイトル列:</strong> ${headers[0] || '(空の列名)'}<br>`;
+      if (headers.length > 1) {
+        const textColumns = headers.slice(1).map((col, index) => col || `列${index + 2}`);
+        infoHtml += `<strong>本文列:</strong> ${textColumns.join(', ')}`;
+      }
+      infoHtml += `<br><strong>データ行数:</strong> ${dataRows.length}行`;
+      infoHtml += `</div>`;
+      
       // 最大5行まで表示
-      const previewData = data.slice(0, 5);
+      const previewData = dataRows.slice(0, 5);
       
       let tableHtml = '<table><thead><tr>';
-      fields.forEach(field => {
-        tableHtml += `<th>${field}</th>`;
+      headers.forEach((header, index) => {
+        const style = index === 0 ? 'background-color: #fff2cc;' : 'background-color: #e8f4fd;';
+        const displayName = header || `列${index + 1}`;
+        tableHtml += `<th style="${style}">${displayName}</th>`;
       });
       tableHtml += '</tr></thead><tbody>';
       
       previewData.forEach(row => {
         tableHtml += '<tr>';
-        fields.forEach(field => {
-          tableHtml += `<td>${row[field] || ''}</td>`;
-        });
+        // rowは配列形式なので、インデックスでアクセス
+        for (let i = 0; i < Math.max(headers.length, row.length); i++) {
+          const cellValue = row[i] || '';
+          const style = i === 0 ? 'background-color: #fff2cc;' : '';
+          const displayValue = cellValue === '' ? '<em>(空)</em>' : cellValue;
+          tableHtml += `<td style="${style}">${displayValue}</td>`;
+        }
         tableHtml += '</tr>';
       });
       
       tableHtml += '</tbody></table>';
-      csvPreview.innerHTML = tableHtml;
+      csvPreview.innerHTML = infoHtml + tableHtml;
     }
     
-    // 材料リスト形式のデータをカードデータに変換
-    function convertIngredientsToCardData() {
+    // CSVデータをカードデータに変換
+    function convertToCardData() {
       if (rawCsvData.length === 0) return;
       
-      const dishNameCol = dishNameColumn.value;
-      const ingredientStartCol = ingredientStartColumn.value;
+      console.log('=== CSV処理開始 ===');
+      console.log('全データ:', rawCsvData);
       
-      if (!dishNameCol || !ingredientStartCol) {
-        alert('料理名の列と材料の開始列を指定してください。');
+      // 最初の行はヘッダーとして扱い、2行目以降をデータとする
+      const headers = rawCsvData[0] || [];
+      const dataRows = rawCsvData.slice(1);
+      
+      console.log('ヘッダー行:', headers);
+      console.log('データ行数:', dataRows.length);
+      
+      if (dataRows.length === 0) {
+        alert('CSVファイルにデータ行が見つかりません。');
         return;
       }
-      
-      // 列名の取得
-      const fields = Object.keys(rawCsvData[0]);
-      const ingredientIndex = fields.indexOf(ingredientStartCol);
-      
-      if (ingredientIndex === -1) {
-        alert(`「${ingredientStartCol}」という列名が見つかりません。`);
-        return;
-      }
-      
-      // 材料の列を特定
-      const ingredientColumns = fields.slice(ingredientIndex);
       
       // カードデータに変換
-      cardData = rawCsvData.map(row => {
-        const title = row[dishNameCol] || '';
+      cardData = dataRows.map((row, index) => {
+        console.log(`\n--- 行${index + 1}の処理 ---`);
+        console.log(`行データ:`, row);
         
-        // 材料をテキストに変換
-        let ingredientTexts = [];
-        ingredientColumns.forEach(col => {
-          let ingredient = row[col];
-          if (ingredient) {
-            ingredientTexts.push(ingredient);
+        // 1列目をタイトル
+        const title = row[0] || '';
+        console.log(`タイトル: "${title}"`);
+        
+        // 2列目以降を本文として結合
+        let textParts = [];
+        
+        for (let i = 1; i < row.length; i++) {
+          const content = row[i];
+          console.log(`  列${i + 1}: "${content}" (型: ${typeof content})`);
+          
+          // undefinedやnullでない場合は処理
+          if (content !== undefined && content !== null) {
+            const trimmedContent = content.toString().trim();
+            console.log(`    トリム後: "${trimmedContent}"`);
+            // 空文字列でない場合のみ追加
+            if (trimmedContent !== '') {
+              textParts.push(trimmedContent);
+              console.log(`    → 追加しました`);
+            } else {
+              console.log(`    → 空文字列のためスキップ`);
+            }
+          } else {
+            console.log(`    → undefined/nullのためスキップ`);
           }
-        });
+        }
+        
+        console.log(`最終的な本文要素:`, textParts);
+        console.log(`結合後の本文: "${textParts.join('\\n')}"`);
         
         return {
           title: title,
-          text: ingredientTexts.join('\n')
+          text: textParts.join('\n')
         };
+      });
+      
+      // 空のタイトルの行を除外
+      const originalCount = cardData.length;
+      cardData = cardData.filter(card => card.title.trim() !== '');
+      
+      console.log(`\n=== 処理結果 ===`);
+      console.log(`処理前のカード数: ${originalCount}`);
+      console.log(`生成されたカード数: ${cardData.length}`);
+      console.log('最初の3枚のカード:');
+      cardData.slice(0, 3).forEach((card, index) => {
+        console.log(`  カード${index + 1}: タイトル="${card.title}", 本文="${card.text}"`);
       });
       
       // カード生成
@@ -521,19 +434,71 @@
       ctx.lineWidth = 3;
       ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
       
-      // タイトル
+      // タイトル（自動改行対応）
       ctx.fillStyle = titleColor.value;
       ctx.font = `bold ${titleSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText(card.title || '', canvas.width / 2, 80);
+      const titleLineHeight = parseInt(titleSize.value) * 1.2;
+      const titleLines = wrapTextJapaneseCentered(ctx, card.title || '', canvas.width / 2, 80, canvas.width - 60, titleLineHeight);
+      
+      // タイトルの高さを計算して本文の開始位置を決定
+      const titleHeight = titleLines * titleLineHeight;
+      const textStartY = Math.max(150, 80 + titleHeight + 30); // 最低150px、またはタイトル終了から30px下
       
       // 説明文
       ctx.fillStyle = textColor.value;
       ctx.font = `${textSize.value}px "Hiragino Sans", "Meiryo", sans-serif`;
       ctx.textAlign = 'left';
-      wrapTextJapanese(ctx, card.text || '', 30, 150, canvas.width - 60, parseInt(textSize.value) * 1.5);
+      wrapTextJapanese(ctx, card.text || '', 30, textStartY, canvas.width - 60, parseInt(textSize.value) * 1.5);
     }
     
+    // 日本語テキストの折り返し処理（中央揃え用）
+    function wrapTextJapaneseCentered(ctx, text, x, y, maxWidth, lineHeight) {
+      const lines = [];
+      let currentLine = '';
+      
+      // まず改行コードで分割
+      const paragraphs = text.split(/\n/);
+      
+      for (const paragraph of paragraphs) {
+        if (paragraph === '') {
+          lines.push('');
+          continue;
+        }
+        
+        let currentX = 0;
+        for (let i = 0; i < paragraph.length; i++) {
+          const char = paragraph[i];
+          const charWidth = ctx.measureText(char).width;
+          
+          // 行の最大幅を超える場合は改行
+          if (currentX + charWidth > maxWidth) {
+            lines.push(currentLine);
+            currentLine = char;
+            currentX = charWidth;
+          } else {
+            currentLine += char;
+            currentX += charWidth;
+          }
+        }
+        
+        // 最後の行を追加
+        if (currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = '';
+        }
+      }
+      
+      // テキストを中央揃えで描画
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        ctx.fillText(line, x, y + (i * lineHeight));
+      }
+      
+      // 描画した行数を返す
+      return lines.length;
+    }
+
     // 日本語テキストの折り返し処理
     function wrapTextJapanese(ctx, text, x, y, maxWidth, lineHeight) {
       // 句読点で改行しないようにする
@@ -646,7 +611,6 @@
     // アプリケーションのリセット
     function resetApp() {
       csvInput.value = '';
-      ingredientsCsvInput.value = '';
       cardData = [];
       rawCsvData = [];
       cardList.innerHTML = '';
@@ -658,10 +622,10 @@
       borderColor.value = '#000000';
       titleColor.value = '#000000';
       textColor.value = '#000000';
-      titleSize.value = 24;
-      textSize.value = 16;
-      titleSizeValue.textContent = '24px';
-      textSizeValue.textContent = '16px';
+      titleSize.value = 54;
+      textSize.value = 40;
+      titleSizeValue.textContent = '54px';
+      textSizeValue.textContent = '40px';
     }
   </script>
 </body>
