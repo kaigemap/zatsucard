@@ -142,7 +142,7 @@
     </div>
     
     <div class="info">
-      <p>カードサイズ: 480x720px (ccfoliaのグリッド4x6に最適化)</p>
+      <p>カードサイズ: 480x720px（ccfoliaのグリッド4x6に最適化）</p>
     </div>
 
     <div class="controls">
@@ -152,6 +152,9 @@
       <div class="control-group">
         <label for="csvInput">CSVファイルを選択:</label>
         <input type="file" id="csvInput" accept=".csv">
+        <div style="margin-top: 0.5em; font-size: 12px; color: #666;">
+          新しいCSVファイルを選択すると、既存のカードは自動的に新しい内容に更新されます
+        </div>
       </div>
 
       <div id="csvPreview" class="csv-preview">
@@ -233,7 +236,17 @@
     // CSVファイルの処理
     function handleFileUpload(e) {
       const file = e.target.files[0];
-      if (!file) return;
+      if (!file) {
+        // ファイルが選択されていない場合（リセットされた場合）
+        resetCardData();
+        return;
+      }
+      
+      // 新しいファイルが選択された場合、既存のカードをクリア
+      clearExistingCards();
+      
+      // ローディング状態を表示
+      showLoadingState();
       
       Papa.parse(file, {
         header: false, // 配列形式で取得
@@ -251,12 +264,21 @@
             
             // カードデータに変換
             convertToCardData();
+            
+            // 成功メッセージを表示
+            showSuccessMessage(file.name);
           } else {
             alert('CSVファイルにデータが見つかりませんでした。');
+            resetCardData();
           }
+          
+          // ローディング状態を解除
+          hideLoadingState();
         },
         error: (error) => {
           alert('CSVファイルの解析中にエラーが発生しました: ' + error);
+          resetCardData();
+          hideLoadingState();
         }
       });
     }
@@ -305,6 +327,60 @@
       
       tableHtml += '</tbody></table>';
       csvPreview.innerHTML = infoHtml + tableHtml;
+    }
+    
+    // 既存のカードをクリア
+    function clearExistingCards() {
+      cardList.innerHTML = '';
+      cardData = [];
+      downloadAllBtn.disabled = true;
+    }
+    
+    // カードデータをリセット
+    function resetCardData() {
+      cardData = [];
+      rawCsvData = [];
+      cardList.innerHTML = '';
+      csvPreview.innerHTML = '<p>CSVプレビューがここに表示されます</p>';
+      downloadAllBtn.disabled = true;
+    }
+    
+    // ローディング状態を表示
+    function showLoadingState() {
+      csvPreview.innerHTML = '<p style="color: #666; font-style: italic;">CSVファイルを処理中...</p>';
+      cardList.innerHTML = '<div style="text-align: center; padding: 2em; color: #666;">カードを生成中...</div>';
+    }
+    
+    // ローディング状態を解除
+    function hideLoadingState() {
+      // この時点でプレビューとカードは既に更新されているので、特に何もしない
+    }
+    
+    // 成功メッセージを表示
+    function showSuccessMessage(fileName) {
+      const message = document.createElement('div');
+      message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 1em 1.5em;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 1000;
+        font-size: 14px;
+      `;
+      message.textContent = `✓ ${fileName} を読み込み、${cardData.length}枚のカードを生成しました`;
+      
+      document.body.appendChild(message);
+      
+      // 3秒後に自動で消去
+      setTimeout(() => {
+        if (message.parentNode) {
+          message.parentNode.removeChild(message);
+        }
+      }, 3000);
     }
     
     // CSVデータをカードデータに変換
@@ -611,11 +687,7 @@
     // アプリケーションのリセット
     function resetApp() {
       csvInput.value = '';
-      cardData = [];
-      rawCsvData = [];
-      cardList.innerHTML = '';
-      csvPreview.innerHTML = '<p>CSVプレビューがここに表示されます</p>';
-      downloadAllBtn.disabled = true;
+      resetCardData();
       
       // デザイン設定をデフォルトに戻す
       bgColor.value = '#ffffff';
@@ -626,6 +698,36 @@
       textSize.value = 40;
       titleSizeValue.textContent = '54px';
       textSizeValue.textContent = '40px';
+      
+      // リセット完了のメッセージを表示
+      showResetMessage();
+    }
+    
+    // リセット完了メッセージを表示
+    function showResetMessage() {
+      const message = document.createElement('div');
+      message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #2196F3;
+        color: white;
+        padding: 1em 1.5em;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        z-index: 1000;
+        font-size: 14px;
+      `;
+      message.textContent = '✓ アプリケーションをリセットしました';
+      
+      document.body.appendChild(message);
+      
+      // 2秒後に自動で消去
+      setTimeout(() => {
+        if (message.parentNode) {
+          message.parentNode.removeChild(message);
+        }
+      }, 2000);
     }
   </script>
 </body>
