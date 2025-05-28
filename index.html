@@ -22,8 +22,18 @@
       <h2>CSVファイルアップロード</h2>
       <p>1列目がタイトル、2列目以降が本文として使用される任意のCSVファイルをアップロードしてください。</p>
       <p><strong>重要:</strong> CSVファイルの1行目はヘッダー行として認識され、カードデータには含まれません。実際のカードは2行目以降のデータから生成されます。</p>
+      
+      <div class="drag-drop-area" id="dragDropArea">
+        <div class="drag-drop-content">
+          <div class="drag-drop-icon">📁</div>
+          <div class="drag-drop-text">
+            <strong>CSVファイルをここにドラッグ&ドロップ</strong>
+            <br>または下のボタンでファイルを選択
+          </div>
+        </div>
+      </div>
+
       <div class="control-group">
-        <label for="csvInput">CSVファイルを選択:</label>
         <input type="file" id="csvInput" accept=".csv">
         <div style="margin-top: 0.5em; font-size: 12px; color: #666;">
           新しいCSVファイルを選択すると、既存のカードは自動的に新しい内容に更新されます
@@ -76,8 +86,12 @@
   <script src="js/card-generator.js"></script>
   <script src="js/csv-handler.js"></script>
   <script src="js/download-manager.js"></script>
+  <script src="js/drag-drop.js"></script>
   
   <script>
+    // ドラッグ&ドロップ機能の初期化
+    initDragAndDrop();
+    
     // イベントリスナーの設定
     csvInput.addEventListener('change', handleFileUpload);
     downloadAllBtn.addEventListener('click', downloadAllCards);

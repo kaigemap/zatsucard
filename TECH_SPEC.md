@@ -12,15 +12,18 @@ graph TB
     A --> E[card-generator.js]
     A --> F[csv-handler.js]
     A --> G[download-manager.js]
+    A --> H[drag-drop.js]
     
     B --> |DOM要素| E
     B --> |DOM要素| F
     B --> |DOM要素| C
+    B --> |DOM要素| H
     
     C --> |UI操作| F
     D --> |テキスト描画| E
     E --> |カード生成| G
     F --> |データ変換| E
+    H --> |ファイル処理| F
 ```
 
 ## 📋 API仕様
@@ -29,6 +32,7 @@ graph TB
 ```javascript
 // DOM要素の参照（読み取り専用）
 const csvInput: HTMLInputElement
+const dragDropArea: HTMLElement
 const cardList: HTMLElement
 const downloadAllBtn: HTMLButtonElement
 // ... 他のDOM要素
@@ -99,6 +103,16 @@ function convertToCardData(): void
 ```javascript
 function downloadCard(canvas: HTMLCanvasElement, filename: string): void
 function downloadAllCards(): void
+```
+
+### drag-drop.js - ドラッグ&ドロップ
+```javascript
+function initDragAndDrop(): void
+function handleDragOver(e: DragEvent): void
+function handleDragEnter(e: DragEvent): void
+function handleDragLeave(e: DragEvent): void
+function handleDrop(e: DragEvent): void
+function showErrorMessage(message: string): void
 ```
 
 ## 🔄 データフロー詳細

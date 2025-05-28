@@ -1,6 +1,6 @@
 {
   "name": "zatsucard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CSV data driven card image generator optimized for ccfolia (480x720px cards)",
   "main": "index.html",
   "scripts": {

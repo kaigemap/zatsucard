@@ -2,6 +2,7 @@
 
 // DOM要素の参照
 const csvInput = document.getElementById('csvInput');
+const dragDropArea = document.getElementById('dragDropArea');
 const cardList = document.getElementById('cardList');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
 const resetBtn = document.getElementById('resetBtn');
