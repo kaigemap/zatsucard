@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Module Test</title>
+</head>
+<body>
+    <div id="test-output"></div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/ui-utils.js"></script>
+    <script src="js/text-renderer.js"></script>
+    <script src="js/card-generator.js"></script>
+    <script src="js/csv-handler.js"></script>
+    <script src="js/download-manager.js"></script>
+    
+    <script>
+        const output = document.getElementById('test-output');
+        
+        try {
+            // 基本的な関数の存在確認
+            const functions = [
+                'clearExistingCards',
+                'resetCardData', 
+                'showLoadingState',
+                'hideLoadingState',
+                'showSuccessMessage',
+                'showResetMessage',
+                'wrapTextJapaneseCentered',
+                'wrapTextJapanese',
+                'generateCards',
+                'drawCard',
+                'handleFileUpload',
+                'displayCsvPreview',
+                'convertToCardData',
+                'downloadCard',
+                'downloadAllCards'
+            ];
+            
+            let results = [];
+            functions.forEach(funcName => {
+                const exists = typeof window[funcName] === 'function';
+                results.push(`${funcName}: ${exists ? '✓' : '✗'}`);
+            });
+            
+            // 変数の存在確認
+            const variables = [
+                'csvInput',
+                'cardList', 
+                'downloadAllBtn',
+                'resetBtn',
+                'bgColor',
+                'borderColor',
+                'titleColor',
+                'textColor',
+                'titleSize',
+                'textSize',
+                'cardData',
+                'rawCsvData',
+                'CARD_WIDTH',
+                'CARD_HEIGHT'
+            ];
+            
+            results.push('<br><strong>Variables:</strong>');
+            variables.forEach(varName => {
+                const exists = typeof window[varName] !== 'undefined';
+                results.push(`${varName}: ${exists ? '✓' : '✗'}`);
+            });
+            
+            output.innerHTML = results.join('<br>');
+            
+        } catch (error) {
+            output.innerHTML = `Error: ${error.message}`;
+        }
+    </script>
+</body>
+</html>
