@@ -32,11 +32,29 @@ function generateCards(data) {
         const dlBtn = document.createElement('button');
         dlBtn.textContent = 'ダウンロード';
         dlBtn.onclick = () => downloadCard(canvas, `card_${i + 1}`);
+
+        const meta = document.createElement('div');
+        meta.className = 'card-meta';
+
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = card.title || `カード ${i + 1}`;
+        title.title = title.textContent;
+
+        const index = document.createElement('div');
+        index.className = 'card-index';
+        index.textContent = String(i + 1).padStart(2, '0');
+
+        meta.appendChild(title);
+        meta.appendChild(index);
         
         wrapper.appendChild(previewCanvas);
+        wrapper.appendChild(meta);
         wrapper.appendChild(dlBtn);
         cardList.appendChild(wrapper);
     });
+
+    updateStats();
 }
 
 // カードの描画

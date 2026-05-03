@@ -15,6 +15,8 @@ const textSize = document.getElementById('textSize');
 const titleSizeValue = document.getElementById('titleSizeValue');
 const textSizeValue = document.getElementById('textSizeValue');
 const csvPreview = document.getElementById('csvPreview');
+const cardCount = document.getElementById('cardCount');
+const rowCount = document.getElementById('rowCount');
 
 // カード生成用データ
 let cardData = [];

@@ -59,14 +59,14 @@ function displayCsvPreview(data) {
   const dataRows = data.slice(1);
   
   // 列の情報を表示
-  let infoHtml = `<div style="margin-bottom: 10px; padding: 5px; background-color: #e8f4fd; border-radius: 3px;">`;
-  infoHtml += `<strong>検出された列:</strong> ${headers.length}列<br>`;
-  infoHtml += `<strong>タイトル列:</strong> ${headers[0] || '(空の列名)'}<br>`;
+  let infoHtml = `<div class="csv-summary">`;
+  infoHtml += `<span><strong>列:</strong> ${headers.length}列</span>`;
+  infoHtml += `<span><strong>タイトル列:</strong> ${escapeHtml(headers[0] || '(空の列名)')}</span>`;
   if (headers.length > 1) {
     const textColumns = headers.slice(1).map((col, index) => col || `列${index + 2}`);
-    infoHtml += `<strong>本文列:</strong> ${textColumns.join(', ')}`;
+    infoHtml += `<span><strong>本文列:</strong> ${escapeHtml(textColumns.join(', '))}</span>`;
   }
-  infoHtml += `<br><strong>データ行数:</strong> ${dataRows.length}行`;
+  infoHtml += `<span><strong>データ行数:</strong> ${dataRows.length}行</span>`;
   infoHtml += `</div>`;
   
   // 最大5行まで表示
@@ -74,9 +74,9 @@ function displayCsvPreview(data) {
   
   let tableHtml = '<table><thead><tr>';
   headers.forEach((header, index) => {
-    const style = index === 0 ? 'background-color: #fff2cc;' : 'background-color: #e8f4fd;';
     const displayName = header || `列${index + 1}`;
-    tableHtml += `<th style="${style}">${displayName}</th>`;
+    const className = index === 0 ? ' class="title-column"' : '';
+    tableHtml += `<th${className}>${escapeHtml(displayName)}</th>`;
   });
   tableHtml += '</tr></thead><tbody>';
   
@@ -85,15 +85,24 @@ function displayCsvPreview(data) {
     // rowは配列形式なので、インデックスでアクセス
     for (let i = 0; i < Math.max(headers.length, row.length); i++) {
       const cellValue = row[i] || '';
-      const style = i === 0 ? 'background-color: #fff2cc;' : '';
-      const displayValue = cellValue === '' ? '<em>(空)</em>' : cellValue;
-      tableHtml += `<td style="${style}">${displayValue}</td>`;
+      const displayValue = cellValue === '' ? '<em>(空)</em>' : escapeHtml(cellValue);
+      const className = i === 0 ? ' class="title-column"' : '';
+      tableHtml += `<td${className}>${displayValue}</td>`;
     }
     tableHtml += '</tr>';
   });
   
   tableHtml += '</tbody></table>';
   csvPreview.innerHTML = infoHtml + tableHtml;
+}
+
+function escapeHtml(value) {
+  return value.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // CSVデータをカードデータに変換
@@ -171,4 +180,5 @@ function convertToCardData() {
   // カード生成
   generateCards(cardData);
   downloadAllBtn.disabled = false;
+  updateStats();
 }

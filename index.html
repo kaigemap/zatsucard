@@ -2,77 +2,118 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カード画像ジェネレーター</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>カード画像ジェネレーター</h1>
+  <div class="app-shell">
+    <header class="topbar">
       <div>
-        <button id="resetBtn">リセット</button>
+        <p class="app-kicker">Zatsucard</p>
+        <h1>カード画像ジェネレーター</h1>
       </div>
-    </div>
-    
-    <div class="info">
-      <p>カードサイズ: 480x720px（ccfoliaのグリッド4x6に最適化）</p>
-    </div>
+      <div class="topbar-actions">
+        <button id="resetBtn" class="button button-secondary" type="button">リセット</button>
+        <button id="downloadAllBtn" class="button button-primary" type="button" disabled>ZIPを書き出す</button>
+      </div>
+    </header>
 
-    <div class="controls">
-      <h2>CSVファイルアップロード</h2>
-      <p>1列目がタイトル、2列目以降が本文として使用される任意のCSVファイルをアップロードしてください。</p>
-      <p><strong>重要:</strong> CSVファイルの1行目はヘッダー行として認識され、カードデータには含まれません。実際のカードは2行目以降のデータから生成されます。</p>
-      
-      <div class="drag-drop-area" id="dragDropArea">
-        <div class="drag-drop-content">
-          <div class="drag-drop-icon">📁</div>
-          <div class="drag-drop-text">
-            <strong>CSVファイルをここにドラッグ&ドロップ</strong>
-            <br>または下のボタンでファイルを選択
+    <main class="workspace">
+      <aside class="side-pane" aria-label="カード設定">
+        <section class="pane-section">
+          <div class="section-heading">
+            <p class="section-kicker">Source</p>
+            <h2>CSV</h2>
+          </div>
+          <p class="section-note">1行目は見出し、1列目はタイトル、2列目以降は本文として読み込みます。</p>
+
+          <div class="drag-drop-area" id="dragDropArea" role="button" tabindex="0">
+            <div class="drag-drop-content">
+              <div class="drag-drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M12 3v12m0-12 4 4m-4-4-4 4M4 15v3a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-3"/>
+                </svg>
+              </div>
+              <div class="drag-drop-text">
+                <strong>CSVをドロップ</strong>
+                <span>またはファイルを選択</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <input type="file" id="csvInput" accept=".csv">
+          </div>
+
+          <a class="button button-secondary sample-link" href="test-cards.csv" download="zatsucard-sample.csv">
+            サンプルCSVをダウンロード
+          </a>
+
+          <div id="csvPreview" class="csv-preview">
+            <p>CSVプレビューがここに表示されます</p>
+          </div>
+        </section>
+
+        <section class="pane-section">
+          <div class="section-heading">
+            <p class="section-kicker">Appearance</p>
+            <h2>カード</h2>
+          </div>
+
+          <div class="color-grid" aria-label="カード配色">
+            <label class="color-field">
+              <span>背景</span>
+              <input type="color" id="bgColor" value="#ffffff">
+            </label>
+            <label class="color-field">
+              <span>枠線</span>
+              <input type="color" id="borderColor" value="#000000">
+            </label>
+            <label class="color-field">
+              <span>タイトル</span>
+              <input type="color" id="titleColor" value="#000000">
+            </label>
+            <label class="color-field">
+              <span>本文</span>
+              <input type="color" id="textColor" value="#000000">
+            </label>
+          </div>
+
+          <div class="range-stack" aria-label="フォントサイズ">
+            <label class="range-field">
+              <span>タイトルサイズ <strong id="titleSizeValue">54px</strong></span>
+              <input type="range" id="titleSize" min="16" max="64" value="54">
+            </label>
+            <label class="range-field">
+              <span>本文サイズ <strong id="textSizeValue">40px</strong></span>
+              <input type="range" id="textSize" min="12" max="54" value="40">
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <section class="main-pane" aria-label="カードプレビュー">
+        <div class="main-pane-header">
+          <div>
+            <p class="section-kicker">Preview</p>
+            <h2>カード</h2>
+            <p class="section-note">480×720px。ccfoliaの4×6グリッド向けです。</p>
+          </div>
+          <div class="stats" aria-label="読み込み状況">
+            <div>
+              <span id="cardCount">0</span>
+              <small>cards</small>
+            </div>
+            <div>
+              <span id="rowCount">0</span>
+              <small>rows</small>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="control-group">
-        <input type="file" id="csvInput" accept=".csv">
-        <div style="margin-top: 0.5em; font-size: 12px; color: #666;">
-          新しいCSVファイルを選択すると、既存のカードは自動的に新しい内容に更新されます
-        </div>
-      </div>
-
-      <div id="csvPreview" class="csv-preview">
-        <p>CSVプレビューがここに表示されます</p>
-      </div>
-      
-      <h2>カードデザイン</h2>
-      <div class="control-group">
-        <label>カードデザイン:</label>
-        <div>
-          <label class="inline-label">背景色: <input type="color" id="bgColor" value="#ffffff"></label>
-          <label class="inline-label">枠線色: <input type="color" id="borderColor" value="#000000"></label>
-          <label class="inline-label">タイトル色: <input type="color" id="titleColor" value="#000000"></label>
-          <label class="inline-label">テキスト色: <input type="color" id="textColor" value="#000000"></label>
-        </div>
-      </div>
-      
-      <div class="control-group">
-        <label>フォント設定:</label>
-        <div>
-          <label>タイトルサイズ: <input type="range" id="titleSize" min="16" max="64" value="54"> <span id="titleSizeValue">54px</span></label>
-          <label>テキストサイズ: <input type="range" id="textSize" min="12" max="54" value="40"> <span id="textSizeValue">40px</span></label>
-        </div>
-      </div>
-    </div>
-    
-    <div class="button-group">
-      <button id="downloadAllBtn" class="download-all" disabled>すべてダウンロード (ZIP)</button>
-    </div>
-    
-    <h2>カードプレビュー</h2>
-    <div id="cardList"></div>
-  </div>
-  <div class="info">
-    <p>このミニアプリはChatGPT, Claude, Copilot, そして手作業で作られています。</p>
+        <div id="cardList"></div>
+      </section>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>

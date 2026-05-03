@@ -14,6 +14,13 @@ function initDragAndDrop() {
   dragDropArea.addEventListener('click', () => {
     csvInput.click();
   });
+
+  dragDropArea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      csvInput.click();
+    }
+  });
 }
 
 /**
@@ -93,8 +100,6 @@ function handleDrop(e) {
   
   // 既存のファイルアップロード処理を呼び出し
   handleFileUpload({ target: csvInput });
-  
-  showSuccessMessage(`ファイル "${csvFile.name}" がアップロードされました`);
 }
 
 /**
@@ -102,24 +107,5 @@ function handleDrop(e) {
  * @param {string} message - エラーメッセージ
  */
 function showErrorMessage(message) {
-  const errorDiv = document.createElement('div');
-  errorDiv.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: #f44336;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 1000;
-    font-weight: bold;
-  `;
-  errorDiv.textContent = message;
-  
-  document.body.appendChild(errorDiv);
-  
-  setTimeout(() => {
-    document.body.removeChild(errorDiv);
-  }, 3000);
+  showToast(message, 'error', 3000);
 }
